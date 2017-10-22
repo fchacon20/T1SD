@@ -2,20 +2,36 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class EchoServer extends Thread{
+
+    public static void createDistrict(List<District> districts){
+        Scanner reader = new Scanner(System.in);
+        System.out.println("AGREGAR DISTRITO");
+        System.out.println("[Servidor Central] Nombre Distrito");
+        String name = reader.next();
+        System.out.println("[Servidor Central] IP Multicast");
+        String IPM = reader.next();
+        System.out.println("[Servidor Central] Puerto Multicast");
+        int PM = reader.nextInt();
+        System.out.println("[Servidor Central] IP Peticiones");
+        String IPP = reader.next();
+        System.out.println("[Servidor Central] Puerto Peticiones");
+        int PP = reader.nextInt();
+
+        districts.add(new District(name, IPM, PM, IPP, PP));
+
+    }
+
     public static void main(String[] args) throws Exception{
 
-//        if (args.length != 1){
-//            System.err.println("Usage: java EchoServer <port number>");
-//            System.exit(1);
-//        }
-//
-//        int portNumber = Integer.parseInt(args[0]);
-
+        List<District> districts = new ArrayList<District>();
         int portNumber = 4000;
 
         try (
@@ -33,8 +49,9 @@ public class EchoServer extends Thread{
             int answer = reader.nextInt();
             System.out.println("[Servidor Central] Respuesta a " + ipSource + " por " + district);
 
-            if (answer == 1)
+            if (answer == 1) {
                 System.out.println("si");
+            }
             else
                 System.out.println("no");
 

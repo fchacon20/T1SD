@@ -9,16 +9,6 @@ import java.util.Scanner;
 public class EchoClient {
     public static void main(String[] args) throws IOException {
 
-//        if (args.length != 2) {
-//            System.err.println("Usage: java EchoCLient <host name> <port number>");
-//            System.exit(1);
-//        }
-
-        //String hostname = args[0];
-        //int portNumber = Integer.parseInt(args[1]);
-
-        //String hostname = "fchacon-HP-240-G5-Notebook-PC";
-
         System.out.println("Bienvenido Attack on Distribuidos!");
         System.out.println("[Cliente] Ingresar IP Servidor Central");
 
