@@ -22,7 +22,7 @@ public class QuoteServerThread extends Thread {
         socket = new DatagramSocket(4445);
 
         try {
-            in = new BufferedReader(new FileReader("/home/fchacon/IdeaProjects/test/src/lines.txt"));
+            in = new BufferedReader(new FileReader("./src/lines.txt"));
         } catch (FileNotFoundException e) {
             System.err.println("Could not open quote file. Serving time instead.");
         }
