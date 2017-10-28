@@ -11,7 +11,7 @@ import java.util.Scanner;
 
 public class EchoServer extends Thread{
 
-    public static void createDistrict(List<District> districts){
+    private static void createDistrict(List<District> districts){
         Scanner reader = new Scanner(System.in);
         System.out.println("AGREGAR DISTRITO");
         System.out.println("[Servidor Central] Nombre Distrito");
@@ -34,43 +34,63 @@ public class EchoServer extends Thread{
         List<District> districts = new ArrayList<District>();
         int portNumber = 4000;
 
-        createDistrict(districts);
-
-        try (
-            ServerSocket serverSocket = new ServerSocket(portNumber);
-            Socket clientSocket = serverSocket.accept();
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        ){
-            String ipSource = clientSocket.getInetAddress().toString();
-            String districtName = in.readLine();
-            System.out.println("[Servidor Central] Dar autorización a " + ipSource + " por Distrito " + districtName);
-            System.out.println("1.- Si");
-            System.out.println("2.- No");
-            Scanner reader = new Scanner(System.in);
-            int answer = reader.nextInt();
-            System.out.println("[Servidor Central] Respuesta a " + ipSource + " por " + districtName);
-
-            if (answer == 1) {
-                System.out.println("si");
-                for (District district: districts) {
-                    if (district.getName().equals(districtName)){
-                        String msg = "Nombre: " + district.getName() + ", IP Multicast: "
-                                + district.getIPmulticast() + ", Puerto Multicast: " + district.getPortM() + ", "
-                                + "IP Peticiones: " + district.getIPPeticiones() +
-                                ", Puerto Peticiones: " + district.getPortP();
-                        System.out.println(msg);
-                        out.println(msg);
-                    }
-                }
-            }
+        do {
+            Scanner ans = new Scanner(System.in);
+            System.out.println("[Servidor Central] Desea crear más distritos? (si o no)");
+            if (ans.next().equals("si"))
+                createDistrict(districts);
             else
-                System.out.println("no");
+                break;
+        }while (true);
 
-        } catch (IOException e){
-            System.out.println("Exception caught when trying to listen on port " + portNumber
-                + " or listening for a connection");
-            System.out.println(e.getMessage());
+        Exit exit = new Exit(portNumber);
+        Thread t = new Thread(exit);
+        t.start();
+
+        while (true) {
+            try (
+                    ServerSocket serverSocket = new ServerSocket(portNumber);
+                    Socket clientSocket = serverSocket.accept();
+                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            ) {
+                System.out.println("Begin of clients");
+                exit.showClients();
+                System.out.println("End of clients\n");
+
+                String ipSource = clientSocket.getInetAddress().toString();
+                String districtName = in.readLine();
+                System.out.println("[Servidor Central] Dar autorización a " + ipSource + " por Distrito " + districtName);
+                System.out.println("1.- Si");
+                System.out.println("2.- No");
+                Scanner reader = new Scanner(System.in);
+                int answer = reader.nextInt();
+                System.out.println("[Servidor Central] Respuesta a " + ipSource + " por " + districtName);
+
+                if (answer == 1) {
+                    System.out.println("si");
+                    for (District district : districts) {
+                        if (district.getName().equals(districtName)) {
+                            String msg = "Nombre: " + district.getName() + ", IP Multicast: "
+                                    + district.getIPmulticast() + ", Puerto Multicast: " + district.getPortM() + ", "
+                                    + "IP Peticiones: " + district.getIPPeticiones() +
+                                    ", Puerto Peticiones: " + district.getPortP();
+                            System.out.print("[Servidor Central] ");
+                            System.out.println(msg);
+                            out.println(msg);
+                        }
+                    }
+                    exit.addClient(new Client(ipSource, districtName));
+                } else {
+                    out.println("no");
+                    System.out.println("no");
+                }
+
+            } catch (IOException e) {
+                System.out.println("Exception caught when trying to listen on port " + portNumber
+                        + " or listening for a connection");
+                System.out.println(e.getMessage());
+            }
         }
     }
 }
