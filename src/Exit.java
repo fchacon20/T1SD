@@ -12,10 +12,33 @@ public class Exit implements Runnable {
 
     private int portNumber;
     private List<Client> clients;
+    private List<District> districts;
 
     Exit(int portNumber){
         this.portNumber = portNumber + 1;
         this.clients = new ArrayList<Client>();
+        this.districts = new ArrayList<District>();
+    }
+
+    public void addDistrict(District district) {
+        this.districts.add(district);
+    }
+
+    public boolean clientExist(String ipSource){
+        for(Client client: clients){
+            if(client.getMyIP().equals(ipSource)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void setDistrictToClient(String ipSource, String district){
+        for(Client client: clients){
+            if(client.getMyIP().equals(ipSource)){
+                client.setDistrict(district);
+            }
+        }
     }
 
     public void addClient(Client client) {
@@ -25,6 +48,22 @@ public class Exit implements Runnable {
     public void showClients(){
         for (Client client: clients)
             System.out.println(client.getMyIP());
+    }
+
+    public List<District> getDistricts() {
+        return districts;
+    }
+
+    public String showDistricts(){
+        StringBuilder ret = new StringBuilder();
+        for (District district: districts) {
+            ret.append("- ");
+            ret.append(district.getName());
+            ret.append(" ");
+            //System.out.print("- ");
+            //System.out.println(district.getName());
+        }
+        return ret.toString();
     }
 
     public void removeClient(String ipSource){
@@ -52,8 +91,9 @@ public class Exit implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        PrintWriter out = null;
         try {
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -72,6 +112,8 @@ public class Exit implements Runnable {
         }
         if (exit.equals("Exit")){
             this.removeClient(ipSource);
+        }else if (exit.equals("Change")){
+            out.println(this.showDistricts());
         }
     }
 }

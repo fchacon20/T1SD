@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class EchoClient {
-    public static void help() throws IOException {
+    public static void help(String name) throws IOException {
+        System.out.println("[Cliente] Estás en el Distrito " + name);
         System.out.println("[Cliente] Consola");
         System.out.println("[Cliente] (1) Listar Titanes");
         System.out.println("[Cliente] (2) Cambiar Distrito");
@@ -18,6 +19,35 @@ public class EchoClient {
         System.out.println("[Cliente] (6) Listar Titanes Asesinados");
         System.out.println("[Cliente] (7) Salir del Distrito");
         System.out.println("[Cliente] (8) Ayuda");
+    }
+
+    public static void exit(Socket exitSocket) throws IOException{
+        PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
+        exitOut.println("Exit");
+        System.out.println("Se ha desconectado del juego.");
+    }
+
+    public static void change(Socket exitSocket, Thread t, String hostname, int portNumber) throws IOException {
+        Scanner reader = new Scanner(System.in);
+        Socket echoSocket = new Socket(hostname, portNumber);
+        PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
+        PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
+
+        exitOut.println("Change");
+        BufferedReader exitIn = new BufferedReader(new InputStreamReader(exitSocket.getInputStream()));
+        System.out.println(exitIn.readLine());
+
+        System.out.println("[Cliente] Nombre del Distrito");
+        String name = reader.next();
+        out.println(name);
+
+        t.interrupt();
+
+        BufferedReader serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+        String[] attr = serverIn.readLine().split(",");
+        t = new Thread(new Info(atributos(attr)));
+        t.start();
+        System.out.println("[Cliente] Ha entrado al Distrito " + name);
     }
 
     public static List<String> atributos(String[] attr){
@@ -71,13 +101,13 @@ public class EchoClient {
             String[] attr = response.split(",");
             List<String> attrL = new ArrayList<>(atributos(attr));
 
-            //attrL contiene los atributos importantes del distrito en una lista
+            //attrL contiene los atributos del distrito en una lista
             System.out.println(attrL);
 
             Thread t = new Thread(new Info(attrL));
             t.start();
 
-            help();
+            help(attrL.get(0));
 
             int option;
             while (true){
@@ -86,6 +116,17 @@ public class EchoClient {
                     case 1:
                         break;
                     case 2:
+                        change(exitSocket, t, hostname, portNumber);
+                        /*exitOut.println("Change");
+                        BufferedReader exitIn = new BufferedReader(new InputStreamReader(exitSocket.getInputStream()));
+                        System.out.println(exitIn.readLine());
+                        System.out.println("[Cliente] Nombre del Distrito");
+                        out.println(reader.next());
+                        t.interrupt();
+                        BufferedReader serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+                        attr = serverIn.readLine().split(",");
+                        t = new Thread(new Info(atributos(attr)));
+                        t.start();*/
                         break;
                     case 3:
                         break;
@@ -96,12 +137,13 @@ public class EchoClient {
                     case 6:
                         break;
                     case 7:
-                        exitOut.println("Exit");
-                        System.out.println("Se ha desconectado del juego.");
+                        exit(exitSocket);
+                        /*exitOut.println("Exit");
+                        System.out.println("Se ha desconectado del juego.");*/
                         System.exit(1);
                         break;
                     case 8:
-                        help();
+                        help(attrL.get(0));
                         break;
                     default:
                         break;
