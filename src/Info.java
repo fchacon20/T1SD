@@ -8,25 +8,36 @@ import java.util.List;
 public class Info implements Runnable {
 
     private List<String> attrL;
+    private boolean running = true;
 
     Info(List<String> attrL){
         this.attrL = attrL;
     }
 
+    //Finaliza el thread
+    public void terminate(){
+        this.running = false;
+    }
+
     @Override
     public void run(){
         MulticastSocket socket = null;
+        InetAddress address = null;
+
+        //Crea un socket Multicast
         try {
             socket = new MulticastSocket(Integer.valueOf(attrL.get(2)));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        InetAddress address = null;
+
         try {
             address = InetAddress.getByName(attrL.get(1));
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+
+        //Se une al grupo Multicast
         try {
             socket.joinGroup(address);
         } catch (IOException e) {
@@ -34,7 +45,17 @@ public class Info implements Runnable {
         }
 
         DatagramPacket packet;
-        while (true) {
+        while (running) {
+
+            if(Thread.currentThread().isInterrupted()) {
+                try {
+                    socket.leaveGroup(address);
+                    terminate();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             byte[] buf = new byte[256];
             packet = new DatagramPacket(buf, buf.length);
             try {
@@ -43,9 +64,9 @@ public class Info implements Runnable {
                 e.printStackTrace();
             }
 
+            //Imprime lo recibido por el grupo Multicast
             String received = new String(packet.getData(), 0, packet.getLength());
             System.out.println("Quote of the Moment: " + received);
         }
-
     }
 }

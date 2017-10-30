@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class EchoClient {
+
+    //Menú con las opciones disponibles
     public static void help(String name) throws IOException {
         System.out.println("[Cliente] Estás en el Distrito " + name);
         System.out.println("[Cliente] Consola");
@@ -21,35 +23,42 @@ public class EchoClient {
         System.out.println("[Cliente] (8) Ayuda");
     }
 
+    //Función que le avisa al servidor central que el cliente se va del juego
     public static void exit(Socket exitSocket) throws IOException{
         PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
         exitOut.println("Exit");
         System.out.println("Se ha desconectado del juego.");
     }
 
-    public static void change(Socket exitSocket, Thread t, String hostname, int portNumber) throws IOException {
+    //Función que cambia de distrito a través del servidor central //NO FUNCIONA
+    public static List<String> change(Socket exitSocket, String hostname, int portNumber) throws IOException {
         Scanner reader = new Scanner(System.in);
         Socket echoSocket = new Socket(hostname, portNumber);
         PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
         PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
 
+        //Avisa que habrá un cambio de distrito
         exitOut.println("Change");
         BufferedReader exitIn = new BufferedReader(new InputStreamReader(exitSocket.getInputStream()));
+
+        //Imprime los nombres de los distritos
         System.out.println(exitIn.readLine());
 
         System.out.println("[Cliente] Nombre del Distrito");
         String name = reader.next();
+
+        //Solicita conexión al nuevo distrito
         out.println(name);
 
-        t.interrupt();
-
         BufferedReader serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+
+        //Recibe y maneja los parámetros del nuevo distrito
         String[] attr = serverIn.readLine().split(",");
-        t = new Thread(new Info(atributos(attr)));
-        t.start();
         System.out.println("[Cliente] Ha entrado al Distrito " + name);
+        return atributos(attr);
     }
 
+    //Filtra la información importante del mensaje que entrega el servidor central
     public static List<String> atributos(String[] attr){
         List<String> ret = new ArrayList<String>();
         String name = attr[0].substring(8);
@@ -65,7 +74,7 @@ public class EchoClient {
         return ret;
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
 
         System.out.println("Bienvenido Attack on Distribuidos!");
         System.out.println("[Cliente] Ingresar IP Servidor Central");
@@ -83,14 +92,16 @@ public class EchoClient {
 
         Socket echoSocket = new Socket(hostname, portNumber);
         Socket exitSocket = new Socket(hostname, portNumber+1);
-        PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
         PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
+        BufferedReader in;
+
+        //Entrega al servidor central el distrito al que quiere conectarse
         out.println(district);
 
-        try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-                BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in))
-        ) {
+        try {
+            in = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
+
+            //Contiene la respuesta del servidor central
             String response = in.readLine();
 
             if (response.equals("no")){
@@ -104,9 +115,11 @@ public class EchoClient {
             //attrL contiene los atributos del distrito en una lista
             System.out.println(attrL);
 
+            //Se inicia un thread que escucha lo transmitido por el distrito
             Thread t = new Thread(new Info(attrL));
             t.start();
 
+            //Mensaje con las opciones
             help(attrL.get(0));
 
             int option;
@@ -116,17 +129,11 @@ public class EchoClient {
                     case 1:
                         break;
                     case 2:
-                        change(exitSocket, t, hostname, portNumber);
-                        /*exitOut.println("Change");
-                        BufferedReader exitIn = new BufferedReader(new InputStreamReader(exitSocket.getInputStream()));
-                        System.out.println(exitIn.readLine());
-                        System.out.println("[Cliente] Nombre del Distrito");
-                        out.println(reader.next());
                         t.interrupt();
-                        BufferedReader serverIn = new BufferedReader(new InputStreamReader(echoSocket.getInputStream()));
-                        attr = serverIn.readLine().split(",");
-                        t = new Thread(new Info(atributos(attr)));
-                        t.start();*/
+                        t.join();
+                        attrL = change(exitSocket, hostname, portNumber);
+                        t = new Thread(new Info(attrL));
+                        t.start();
                         break;
                     case 3:
                         break;
@@ -136,16 +143,15 @@ public class EchoClient {
                         break;
                     case 6:
                         break;
-                    case 7:
+                    case 7: //Funciona
                         exit(exitSocket);
-                        /*exitOut.println("Exit");
-                        System.out.println("Se ha desconectado del juego.");*/
                         System.exit(1);
                         break;
-                    case 8:
+                    case 8: //Funciona
                         help(attrL.get(0));
                         break;
                     default:
+                        System.out.println("[Cliente] Opción errónea");
                         break;
                 }
             }
