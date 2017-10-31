@@ -5,7 +5,7 @@ import java.util.List;
 
 import static java.lang.Thread.sleep;
 
-public class DistrictThread implements Runnable{
+public class DistrictThread implements Runnable {
 
     private String name;
     private List<Titan> titans;
@@ -13,9 +13,9 @@ public class DistrictThread implements Runnable{
     private int PM;
     private String IPP;
     private int PP;
-    private long FIVE_SECONDS = 5000;
+    private long TWENTY_SECONDS = 20000;
 
-    DistrictThread(String name, List<Titan> titans, String IPM, int PM, String IPP, int PP){
+    DistrictThread(String name, List<Titan> titans, String IPM, int PM, String IPP, int PP) {
         this.name = name;
         this.titans = titans;
         this.IPM = IPM;
@@ -24,10 +24,10 @@ public class DistrictThread implements Runnable{
         this.PP = PP;
     }
 
-    public String showTitans(){
+    public String showTitans() {
         StringBuilder ret = new StringBuilder();
-        for (Titan titan: titans){
-            if (titan.getDistrictName().equals(name) && titan.getStatus().equals("Alive")){
+        for (Titan titan : titans) {
+            if (titan.getDistrictName().equals(name) && titan.getStatus().equals("Alive")) {
                 ret.append("- ");
                 ret.append(titan.getId());
                 ret.append(", ");
@@ -48,8 +48,8 @@ public class DistrictThread implements Runnable{
         InetAddress group = null;
         DatagramPacket packet;
         byte[] buf = new byte[256];
-        int nTitans = 0;
         int lastID = 0;
+        boolean alert = false;
 
         try {
             socket = new DatagramSocket();
@@ -67,17 +67,34 @@ public class DistrictThread implements Runnable{
             e.printStackTrace();
         }
 
-        while(true) {
+        while (true) {
 
             //Si aparece un nuevo titán, alerta al grupo multicast
-            dString = showTitans();
+            dString = "Lista: " + showTitans();
+            alert = false;
+
             if (titans.size() != 0) {
                 if (titans.get(titans.size() - 1).getDistrictName().equals(name)) {
                     if (titans.get(titans.size() - 1).getId() != lastID) {
                         lastID = titans.get(titans.size() - 1).getId();
-                        dString = "Aparece un nuevo Titán! " + titans.get(lastID-1).getName()
-                                + ", tipo " + titans.get(lastID-1).getType() + ", ID " +
-                                titans.get(lastID-1).getId() + ".";
+                        dString = "Alerta: Aparece un nuevo Titán!, " + titans.get(lastID - 1).getName()
+                                + ", tipo " + titans.get(lastID - 1).getType() + ", ID " +
+                                titans.get(lastID - 1).getId();
+                        alert = true;
+                    }
+                }
+            }
+
+            if (!alert) {
+                for (Titan titan: titans) {
+                    if (titan.getStatus().equals("Captured")) {
+                        dString = "Captura de Titán " + titan.getName() + " con id: " + titan.getId();
+                        titan.setStatus("Revised");
+                        break;
+                    } else if (titan.getStatus().equals("Killed")) {
+                        dString = "Asesinato de Titán " + titan.getName() + " con id: " + titan.getId();
+                        titan.setStatus("Revised");
+                        break;
                     }
                 }
             }
@@ -94,9 +111,10 @@ public class DistrictThread implements Runnable{
 
             //Espera un tiempo para volver a enviar el paquete
             try {
-                sleep((long) (Math.random() * FIVE_SECONDS));
+                sleep((long) (Math.random() * TWENTY_SECONDS));
             } catch (InterruptedException e) {
             }
         }
     }
+
 }

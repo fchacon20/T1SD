@@ -2,19 +2,28 @@ import java.io.Serializable;
 
 public class Titan implements Serializable{
 
-    private static int id = 0;
+    private static int count = 1;
+    private int id;
     private String districtName;
     private String name;
     private String type;
     private String status;
 
     Titan(String district, String name, String type){
+        this.id = count;
+        this.name = name;
+        this.districtName = district;
+        this.type = type;
+        this.status = "Alive";
+        Titan.count++;
+    }
+
+    Titan(int id, String district, String name, String type){
         this.id = id;
         this.name = name;
         this.districtName = district;
         this.type = type;
         this.status = "Alive";
-        Titan.id++;
     }
 
     public String getStatus() {

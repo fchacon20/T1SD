@@ -9,6 +9,10 @@ import java.util.Scanner;
 
 public class EchoClient {
 
+    static List<Titan> titans = new ArrayList<>();
+    static List<Titan> capturedTitans = new ArrayList<>();
+    static List<Titan> killedTitans = new ArrayList<>();
+
     //Menú con las opciones disponibles
     public static void help(String name) throws IOException {
         System.out.println("[Cliente] Estás en el Distrito " + name);
@@ -74,6 +78,86 @@ public class EchoClient {
         return ret;
     }
 
+    public static String showTitans(List<Titan> titans, String name){
+        StringBuilder ret = new StringBuilder();
+        for (Titan titan: titans){
+            if (titan.getDistrictName().equals(name)){
+                ret.append("- ");
+                ret.append(titan.getId());
+                ret.append(", ");
+                ret.append(titan.getName());
+                ret.append(", ");
+                ret.append(titan.getType());
+                ret.append(" ");
+            }
+        }
+        if (ret.length() == 0)
+            ret.append("No hay titanes en este distrito");
+        return ret.toString();
+    }
+
+    public static String showCapturedTitans(List<Titan> titans){
+        StringBuilder ret = new StringBuilder();
+        for (Titan titan: titans){
+            ret.append("- ");
+            ret.append(titan.getId());
+            ret.append(", ");
+            ret.append(titan.getName());
+            ret.append(", ");
+            ret.append(titan.getType());
+            ret.append(", ");
+            ret.append(titan.getDistrictName());
+            ret.append(" ");
+        }
+        if (ret.length() == 0)
+            ret.append("No hay titanes capturados");
+        return ret.toString();
+    }
+
+    public static String showKilledTitans(List<Titan> titans){
+        StringBuilder ret = new StringBuilder();
+        for (Titan titan: titans){
+            ret.append("- ");
+            ret.append(titan.getId());
+            ret.append(", ");
+            ret.append(titan.getName());
+            ret.append(", ");
+            ret.append(titan.getType());
+            ret.append(", ");
+            ret.append(titan.getDistrictName());
+            ret.append(" ");
+        }
+        if (ret.length() == 0)
+            ret.append("No hay titanes asesinados");
+        return ret.toString();
+    }
+
+    public static void captureTitan(int id){
+        for (Titan titan: titans){
+            if (titan.getId() == id){
+                capturedTitans.add(titan);
+            }
+        }
+    }
+
+    public static void killedTitans(int id){
+        for (Titan titan: titans){
+            if (titan.getId() == id){
+                killedTitans.add(titan);
+            }
+        }
+    }
+
+    public static Titan getTitan(int id){
+        Titan auxTitan = null;
+        for (Titan titan: titans){
+            if (titan.getId() == id){
+                auxTitan = titan;
+            }
+        }
+        return auxTitan;
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
 
         System.out.println("Bienvenido Attack on Distribuidos!");
@@ -111,12 +195,14 @@ public class EchoClient {
 
             String[] attr = response.split(",");
             List<String> attrL = new ArrayList<>(atributos(attr));
+            int idd; //Capturar o asesinar
+            Titan auxTitan;
 
             //attrL contiene los atributos del distrito en una lista
             System.out.println(attrL);
 
             //Se inicia un thread que escucha lo transmitido por el distrito
-            Thread t = new Thread(new Info(attrL));
+            Thread t = new Thread(new Info(attrL, titans, capturedTitans, killedTitans));
             t.start();
 
             //Mensaje con las opciones
@@ -127,21 +213,56 @@ public class EchoClient {
                 option = reader.nextInt();
                 switch (option){
                     case 1:
+                        System.out.println(showTitans(titans, district));
                         break;
                     case 2: //No funciona
                         t.interrupt();
                         t.join();
                         attrL = change(exitSocket, hostname, portNumber);
-                        t = new Thread(new Info(attrL));
+                        t = new Thread(new Info(attrL, titans, capturedTitans, killedTitans));
                         t.start();
                         break;
                     case 3:
+                        System.out.println("[Cliente] ID del titán a capturar?");
+                        idd = reader.nextInt();
+                        auxTitan = getTitan(idd);
+                        if (auxTitan.getType().equals("Excéntrico")) {
+                            System.out.println("[Cliente] No puedes capturar un Titán tipo Excéntrico");
+                        } else {
+                            DatagramSocket clientSocket = new DatagramSocket();
+                            InetAddress IPAddress = InetAddress.getByName(attrL.get(3));
+                            byte[] sendData = new byte[1024];
+                            String sentence = "Capture " + idd;
+                            sendData = sentence.getBytes();
+                            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
+                                    IPAddress, Integer.valueOf(attrL.get(4)));
+                            clientSocket.send(sendPacket);
+                            captureTitan(idd);
+                        }
                         break;
                     case 4:
+                        System.out.println("[Cliente] ID del titán a asesinar?");
+                        idd = reader.nextInt();
+                        auxTitan = getTitan(idd);
+                        if (auxTitan.getType().equals("Cambiante")) {
+                            System.out.println("[Cliente] No puedes asesinar un Titán tipo Cambiante");
+                        } else {
+                            DatagramSocket clientSocket = new DatagramSocket();
+                            InetAddress IPAddress = InetAddress.getByName(attrL.get(3));
+                            byte[] sendData = new byte[1024];
+                            String sentence = "Asesinado " + idd;
+                            sendData = sentence.getBytes();
+                            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
+                                    IPAddress, Integer.valueOf(attrL.get(4)));
+                            clientSocket.send(sendPacket);
+                            killedTitans(idd);
+                        }
                         break;
                     case 5:
+                        System.out.println(showCapturedTitans(capturedTitans));
                         break;
                     case 6:
+                        System.out.println(showKilledTitans(killedTitans));
                         break;
                     case 7: //Funciona
                         exit(exitSocket);

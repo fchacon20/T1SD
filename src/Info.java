@@ -3,15 +3,32 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Info implements Runnable {
 
     private List<String> attrL;
     private boolean running = true;
+    private List<Titan> titans;
+    private List<Titan> capturedTitans;
+    private List<Titan> killedTitans;
 
-    Info(List<String> attrL){
+    Info(List<String> attrL, List<Titan> titans, List<Titan> capturedTitans, List<Titan> killedTitans){
+        this.titans = titans;
+        this.capturedTitans = capturedTitans;
+        this.killedTitans = killedTitans;
         this.attrL = attrL;
+    }
+
+    public void removeTitan(int id){
+        for (Titan titan: titans){
+            if (titan.getId() == id){
+                titans.remove(titan);
+                break;
+            }
+        }
     }
 
     //Finaliza el thread
@@ -45,6 +62,10 @@ public class Info implements Runnable {
         }
 
         DatagramPacket packet;
+        String[] update;
+        String[] auxUpdate;
+        boolean listReceived = false;
+        int idd;
         while (running) {
 
             if(Thread.currentThread().isInterrupted()) {
@@ -67,6 +88,31 @@ public class Info implements Runnable {
             //Imprime lo recibido por el grupo Multicast
             String received = new String(packet.getData(), 0, packet.getLength());
             System.out.println("[Cliente] " + received);
+
+            if (received.substring(0,4).equals("List")){
+                titans.clear();
+                update = received.split("-");
+                for (String up: update){
+                    if (up.equals(update[0]))
+                        continue;
+                    auxUpdate = up.split(",");
+                    auxUpdate[0] = auxUpdate[0].substring(1);
+                    auxUpdate[1] = auxUpdate[1].substring(1);
+                    auxUpdate[2] = auxUpdate[2].substring(1, auxUpdate[2].length()-1);
+                    titans.add(new Titan(Integer.valueOf(auxUpdate[0]), attrL.get(0),
+                            auxUpdate[1], auxUpdate[2]));
+                }
+            }else if(received.substring(0,5).equals("Alert")){
+                update = received.split(",");
+                titans.add(new Titan(Integer.valueOf(update[3].substring(4)), attrL.get(0),
+                        update[1].substring(1), update[2].substring(6)));
+            }else if(received.substring(0,7).equals("Captura")){
+                idd = Integer.valueOf(received.split(": ")[1]);
+                removeTitan(idd);
+            }else if(received.substring(0,9).equals("Asesinato")){
+                idd = Integer.valueOf(received.split(": ")[1]);
+                removeTitan(idd);
+            }
         }
     }
 }

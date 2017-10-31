@@ -26,6 +26,7 @@ public class MulticastServer {
     public static void main(String[] args) throws IOException {
 
         List<Thread> districts = new ArrayList<>();
+        List<Thread> requests = new ArrayList<>();
         List<District> districts1 = new ArrayList<>();
         Socket serverSocket = new Socket(hostname, portNumber);
         BufferedReader in = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
@@ -40,8 +41,10 @@ public class MulticastServer {
 
                 //Corre el thread multicast del distrito agregado
                 //Hace falta agregar el de peticiones
+                requests.add(new Thread(new DistrictRequest(attr[0], Integer.valueOf(attr[4]) , titans)));
                 districts.add(new Thread(new DistrictThread(attr[0], titans, attr[1],
                         Integer.valueOf(attr[2]), attr[3], Integer.valueOf(attr[4]))));
+                requests.get(i).start();
                 districts.get(i).start();
                 districts1.add(new District(attr[0], attr[1],
                                 Integer.valueOf(attr[2]), attr[3], Integer.valueOf(attr[4])));
@@ -55,10 +58,8 @@ public class MulticastServer {
 
         serverSocket.close();
 
-        //loop para que no termine el programa (?), puede que con join sea más elegante
-        //Socket exitSocket = new Socket(hostname, 4001);
+        //Publicación de titanes
         Scanner reader = new Scanner(System.in);
-        //PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
         String districtName;
         String titanName;
         String titanType;
