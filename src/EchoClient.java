@@ -128,7 +128,7 @@ public class EchoClient {
                 switch (option){
                     case 1:
                         break;
-                    case 2:
+                    case 2: //No funciona
                         t.interrupt();
                         t.join();
                         attrL = change(exitSocket, hostname, portNumber);

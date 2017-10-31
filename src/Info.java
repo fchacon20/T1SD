@@ -66,7 +66,7 @@ public class Info implements Runnable {
 
             //Imprime lo recibido por el grupo Multicast
             String received = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("Quote of the Moment: " + received);
+            System.out.println("[Cliente] " + received);
         }
     }
 }
