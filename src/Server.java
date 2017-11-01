@@ -4,9 +4,20 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
-public class EchoServer extends Thread{
+public class Server extends Thread{
+
+    private static List<Client> clients = new ArrayList<>();
+
+    //Mostrar clientes
+    private static void showClients(){
+        for (Client client: clients)
+            System.out.println("> " + client.getMyIP() + " con puerto " + client.getPort() +
+                    " en distrito " + client.getDistrict());
+    }
 
     //Función que crea distritos
     private static District createDistrict(){
@@ -17,11 +28,11 @@ public class EchoServer extends Thread{
         String name = reader.next();
         System.out.println("[Servidor Central] IP Multicast");
         String IPM = reader.next();
-        System.out.println("[Servidor Central] Puerto Multicast");
+        System.out.println("[Servidor Central] Puerto Multicast (5000-5500)");
         int PM = reader.nextInt();
-        System.out.println("[Servidor Central] IP Peticiones");
+        System.out.println("[Servidor Central] IP Peticiones (10.10.2.130)");
         String IPP = reader.next();
-        System.out.println("[Servidor Central] Puerto Peticiones");
+        System.out.println("[Servidor Central] Puerto Peticiones (5000-5500)");
         int PP = reader.nextInt();
         ret = new District(name, IPM, PM, IPP, PP);
         return ret;
@@ -32,7 +43,7 @@ public class EchoServer extends Thread{
         int portNumber = 4000;
 
         //Creación y sincronización de distritos con Servidor de Distritos
-        Exit exit = new Exit(portNumber);
+        ServerRequest serverRequest = new ServerRequest(portNumber, clients);
         int nDistricts = 0;
         System.out.println("[Servidor Central] Esperando a que se conecte el Servidor de Distrito");
         ServerSocket serverDistrictSocket = new ServerSocket(portNumber);
@@ -43,9 +54,9 @@ public class EchoServer extends Thread{
             Scanner ans = new Scanner(System.in);
             System.out.println("[Servidor Central] Desea crear más distritos? (si o no)");
             if (ans.next().equals("si")) {
-                exit.addDistrict(createDistrict());
+                serverRequest.addDistrict(createDistrict());
                 StringBuilder districtData =  new StringBuilder();
-                District district = exit.getDistricts().get(nDistricts);
+                District district = serverRequest.getDistricts().get(nDistricts);
                 districtData.append(district.getName());         districtData.append(",");
                 districtData.append(district.getIPmulticast());  districtData.append(",");
                 districtData.append(district.getPortM());        districtData.append(",");
@@ -62,12 +73,12 @@ public class EchoServer extends Thread{
             }
         }while (true);
 
-        Thread t = new Thread(exit);
+        Thread t = new Thread(serverRequest);
         t.start();
 
         ServerSocket serverSocket = new ServerSocket(portNumber);
-        Socket clientSocket = null;
-        PrintWriter out = null;
+        Socket clientSocket;
+        PrintWriter out;
         BufferedReader in;
         int autorization;
         Scanner reader = new Scanner(System.in);
@@ -81,6 +92,10 @@ public class EchoServer extends Thread{
 
                 String ipSource = clientSocket.getInetAddress().toString();
                 String districtName = in.readLine();
+
+                if (districtName == null)
+                    continue;
+
                 System.out.println("[Servidor Central] Dar autorización a " + ipSource + " por Distrito " + districtName);
                 System.out.println("1.- Si\n2.- No");
 
@@ -89,7 +104,7 @@ public class EchoServer extends Thread{
                         " por " + districtName);
 
                 if (autorization == 1) {
-                    for (District district : exit.getDistricts()) {
+                    for (District district : serverRequest.getDistricts()) {
                         if (district.getName().equals(districtName)) {
                             String msg = "Nombre: " + district.getName() + ", IP Multicast: "
                                     + district.getIPmulticast() + ", Puerto Multicast: " + district.getPortM() + ", "
@@ -102,13 +117,16 @@ public class EchoServer extends Thread{
                     }
 
                     //Nuevo cliente o cambio de distrito
-                    if (!exit.clientExist(ipSource))
-                        exit.addClient(new Client(ipSource, districtName));
+                    if (!serverRequest.clientExist(ipSource, clientSocket.getPort()))
+                        clients.add(new Client(ipSource, districtName, clientSocket.getPort()));
                     else
-                        exit.setDistrictToClient(ipSource, districtName);
+                        serverRequest.setDistrictToClient(ipSource, districtName);
 
-                } else
+                } else {
                     out.println("no");
+                }
+
+                showClients();
 
             } catch (IOException e) {
                 System.out.println("Exception caught when trying to listen on port " + portNumber

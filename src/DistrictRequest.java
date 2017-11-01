@@ -8,7 +8,6 @@ public class DistrictRequest implements Runnable{
 
     private int port;
     private byte[] receiveData = new byte[256];
-    private byte[] sendData = new byte[256];
     private DatagramPacket packet;
     private String name;
     private List<Titan> titans;
@@ -31,7 +30,6 @@ public class DistrictRequest implements Runnable{
     public void killTitan(int idd){
         for (Titan titan: titans){
             if (titan.getId() == idd) {
-                System.out.println("murio titán " + titan.getName());
                 titan.setStatus("Killed");
                 break;
             }

@@ -3,8 +3,6 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Info implements Runnable {
@@ -12,13 +10,9 @@ public class Info implements Runnable {
     private List<String> attrL;
     private boolean running = true;
     private List<Titan> titans;
-    private List<Titan> capturedTitans;
-    private List<Titan> killedTitans;
 
-    Info(List<String> attrL, List<Titan> titans, List<Titan> capturedTitans, List<Titan> killedTitans){
+    Info(List<String> attrL, List<Titan> titans){
         this.titans = titans;
-        this.capturedTitans = capturedTitans;
-        this.killedTitans = killedTitans;
         this.attrL = attrL;
     }
 
@@ -56,6 +50,8 @@ public class Info implements Runnable {
 
         //Se une al grupo Multicast
         try {
+            assert socket != null;
+            assert address != null;
             socket.joinGroup(address);
         } catch (IOException e) {
             e.printStackTrace();
@@ -64,7 +60,6 @@ public class Info implements Runnable {
         DatagramPacket packet;
         String[] update;
         String[] auxUpdate;
-        boolean listReceived = false;
         int idd;
         while (running) {
 

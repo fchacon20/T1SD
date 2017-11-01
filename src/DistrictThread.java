@@ -1,6 +1,5 @@
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.List;
 
 import static java.lang.Thread.sleep;
@@ -47,9 +46,8 @@ public class DistrictThread implements Runnable {
         DatagramSocket socket = null;
         InetAddress group = null;
         DatagramPacket packet;
-        byte[] buf = new byte[256];
+        byte[] buf;
         int lastID = 0;
-        boolean alert = false;
 
         try {
             socket = new DatagramSocket();
@@ -70,9 +68,6 @@ public class DistrictThread implements Runnable {
         while (true) {
 
             //Si aparece un nuevo titán, alerta al grupo multicast
-            dString = "Lista: " + showTitans();
-            alert = false;
-
             if (titans.size() != 0) {
                 if (titans.get(titans.size() - 1).getDistrictName().equals(name)) {
                     if (titans.get(titans.size() - 1).getId() != lastID) {
@@ -80,22 +75,35 @@ public class DistrictThread implements Runnable {
                         dString = "Alerta: Aparece un nuevo Titán!, " + titans.get(lastID - 1).getName()
                                 + ", tipo " + titans.get(lastID - 1).getType() + ", ID " +
                                 titans.get(lastID - 1).getId();
-                        alert = true;
+
+                        buf = dString.getBytes();
+                        //Crea el paquete dirigido al grupo multicast
+                        packet = new DatagramPacket(buf, buf.length, group, PM);
+
+                        try {
+                            assert socket != null;
+                            socket.send(packet);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
 
-            if (!alert) {
-                for (Titan titan: titans) {
-                    if (titan.getStatus().equals("Captured")) {
-                        dString = "Captura de Titán " + titan.getName() + " con id: " + titan.getId();
-                        titan.setStatus("Revised");
-                        break;
-                    } else if (titan.getStatus().equals("Killed")) {
-                        dString = "Asesinato de Titán " + titan.getName() + " con id: " + titan.getId();
-                        titan.setStatus("Revised");
-                        break;
-                    }
+            dString = "Lista: " + showTitans();
+
+            for (Titan titan: titans) {
+                System.out.println("revisando");
+                if (titan.getStatus().equals("Captured")) {
+                    System.out.println("uno capturado");
+                    dString = "Captura de Titán " + titan.getName() + " con id: " + titan.getId();
+                    titan.setStatus("Revised");
+                    break;
+                } else if (titan.getStatus().equals("Killed")) {
+                    System.out.println("uno killed");
+                    dString = "Asesinato de Titán " + titan.getName() + " con id: " + titan.getId();
+                    titan.setStatus("Revised");
+                    break;
                 }
             }
 
@@ -104,6 +112,7 @@ public class DistrictThread implements Runnable {
             packet = new DatagramPacket(buf, buf.length, group, PM);
 
             try {
+                assert socket != null;
                 socket.send(packet);
             } catch (IOException e) {
                 e.printStackTrace();

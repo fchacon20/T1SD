@@ -7,11 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class MulticastServer {
+public class ServerDistrict {
 
     static List<Titan> titans = new ArrayList<>();
-    static String hostname = "192.168.122.1"; //CAMBIAR
-    static int portNumber = 4000;          //CAMBIAR
+    static String hostname = "192.168.122.1";
+    static int portNumber = 4000;
 
     public static String showDistricts(List<District> districts){
         StringBuilder ret = new StringBuilder();

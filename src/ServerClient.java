@@ -7,11 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class EchoClient {
+public class ServerClient {
 
     static List<Titan> titans = new ArrayList<>();
     static List<Titan> capturedTitans = new ArrayList<>();
     static List<Titan> killedTitans = new ArrayList<>();
+    static Thread t;
 
     //Menú con las opciones disponibles
     public static void help(String name) throws IOException {
@@ -21,7 +22,7 @@ public class EchoClient {
         System.out.println("[Cliente] (2) Cambiar Distrito");
         System.out.println("[Cliente] (3) Capturar Titan");
         System.out.println("[Cliente] (4) Asesinar Titan");
-        System.out.println("[Cliente] (5) Listar Titantes Capturados");
+        System.out.println("[Cliente] (5) Listar Titanes Capturados");
         System.out.println("[Cliente] (6) Listar Titanes Asesinados");
         System.out.println("[Cliente] (7) Salir del Distrito");
         System.out.println("[Cliente] (8) Ayuda");
@@ -30,12 +31,12 @@ public class EchoClient {
     //Función que le avisa al servidor central que el cliente se va del juego
     public static void exit(Socket exitSocket) throws IOException{
         PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
-        exitOut.println("Exit");
+        exitOut.println("ServerRequest");
         System.out.println("Se ha desconectado del juego.");
     }
 
     //Función que cambia de distrito a través del servidor central //NO FUNCIONA
-    public static List<String> change(Socket exitSocket, String hostname, int portNumber) throws IOException {
+    public static List<String> change(Socket exitSocket, String hostname, int portNumber) throws IOException, InterruptedException {
         Scanner reader = new Scanner(System.in);
         Socket echoSocket = new Socket(hostname, portNumber);
         PrintWriter exitOut = new PrintWriter(exitSocket.getOutputStream(),true);
@@ -64,7 +65,7 @@ public class EchoClient {
 
     //Filtra la información importante del mensaje que entrega el servidor central
     public static List<String> atributos(String[] attr){
-        List<String> ret = new ArrayList<String>();
+        List<String> ret = new ArrayList<>();
         String name = attr[0].substring(8);
         String IPM = attr[1].substring(15);
         String PM = attr[2].substring(19);
@@ -171,9 +172,6 @@ public class EchoClient {
         System.out.println("\n[Cliente] Introducir Nombre de Distrito a Investigar, Ej: Trost, Shiganshina");
         String district = reader.next();
 
-        //String hostname = "192.168.122.1";
-        //int portNumber = 4000;
-
         Socket echoSocket = new Socket(hostname, portNumber);
         Socket exitSocket = new Socket(hostname, portNumber+1);
         PrintWriter out = new PrintWriter(echoSocket.getOutputStream(), true);
@@ -202,7 +200,7 @@ public class EchoClient {
             System.out.println(attrL);
 
             //Se inicia un thread que escucha lo transmitido por el distrito
-            Thread t = new Thread(new Info(attrL, titans, capturedTitans, killedTitans));
+            t = new Thread(new Info(attrL, titans));
             t.start();
 
             //Mensaje con las opciones
@@ -215,11 +213,9 @@ public class EchoClient {
                     case 1:
                         System.out.println(showTitans(titans, district));
                         break;
-                    case 2: //No funciona
-                        t.interrupt();
-                        t.join();
+                    case 2:
                         attrL = change(exitSocket, hostname, portNumber);
-                        t = new Thread(new Info(attrL, titans, capturedTitans, killedTitans));
+                        t = new Thread(new Info(attrL, titans));
                         t.start();
                         break;
                     case 3:
@@ -231,7 +227,7 @@ public class EchoClient {
                         } else {
                             DatagramSocket clientSocket = new DatagramSocket();
                             InetAddress IPAddress = InetAddress.getByName(attrL.get(3));
-                            byte[] sendData = new byte[1024];
+                            byte[] sendData;
                             String sentence = "Capture " + idd;
                             sendData = sentence.getBytes();
                             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
@@ -249,7 +245,7 @@ public class EchoClient {
                         } else {
                             DatagramSocket clientSocket = new DatagramSocket();
                             InetAddress IPAddress = InetAddress.getByName(attrL.get(3));
-                            byte[] sendData = new byte[1024];
+                            byte[] sendData;
                             String sentence = "Asesinado " + idd;
                             sendData = sentence.getBytes();
                             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,
@@ -264,11 +260,12 @@ public class EchoClient {
                     case 6:
                         System.out.println(showKilledTitans(killedTitans));
                         break;
-                    case 7: //Funciona
+                    case 7:
                         exit(exitSocket);
+                        t.join();
                         System.exit(1);
                         break;
-                    case 8: //Funciona
+                    case 8:
                         help(attrL.get(0));
                         break;
                     default:

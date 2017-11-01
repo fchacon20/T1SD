@@ -6,8 +6,6 @@ public class District {
     private String IPPeticiones;
     private int portP;
 
-    District(){}
-
     District(String name, String IPmulticast, int portM, String IPPeticiones, int portP){
         this.name = name;
         this.IPmulticast = IPmulticast;
